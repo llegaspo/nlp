@@ -1,0 +1,19 @@
+# NLP Visual Lab
+
+An interactive React and TypeScript study app based on the PDFs in `../.docs`. It includes eight labs: tokens and BPE, edit distance, context vectors, trainable CBOW/skip-gram embeddings, n-gram models, smoothing, perplexity, and a small neural network.
+
+## Run locally
+
+```sh
+cd nlp-visual-lab
+npm install
+npm run dev
+```
+
+Open the local URL printed by Vite. `npm run build` produces a static `dist` directory; `npm test` checks the key lesson calculations. The lessons themselves run in the browser without a backend or account. An optional web font and an attribution link to the original Word2Vec paper use the network.
+
+The high fidelity UI reference was generated before the React implementation and saved at [`design/embedding-workspace-concept.png`](design/embedding-workspace-concept.png). Its prompt and usage notes are in [`design/README.md`](design/README.md). The mockup is a design reference: the app's topics, graph points, and numbers come from the course material and live calculations.
+
+`src/lib/math.js` holds the calculation engine, with its TypeScript interface in `src/lib/math.d.ts`. `src/labs` contains the interactive React lessons. `SOURCE_AUDIT.md` records the calculation conventions and discrepancies in rounded or inconsistent slide examples. The source PDFs are not bundled into the hosted output.
+
+The app feature-detects WebMCP and, where supported, exposes tools to open a lesson and train the small embedding model.

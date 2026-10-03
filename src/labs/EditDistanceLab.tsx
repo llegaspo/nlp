@@ -1,0 +1,29 @@
+import { useMemo, useState } from 'react';
+import { editDistance } from '../lib/math.js';
+import { Challenge, Empty, Formula, Panel, Stat } from '../components/LabUI';
+
+export default function EditDistanceLab() {
+  const [source, setSource] = useState('STRENGTH');
+  const [target, setTarget] = useState('TREND');
+  const [insert, setInsert] = useState(1);
+  const [deletion, setDeletion] = useState(1);
+  const [substitute, setSubstitute] = useState(1);
+  const [step, setStep] = useState(0);
+  const [selected, setSelected] = useState<[number, number] | null>(null);
+  const result = useMemo(() => editDistance(source, target, {insert, delete: deletion, substitute}), [source, target, insert, deletion, substitute]);
+  const columns = result.b.length + 1;
+  const total = result.grid.length * columns;
+  const [row, column] = selected || [result.a.length, result.b.length];
+  const options = result.candidates[row]?.[column];
+  const path = new Set<string>(result.path.map((point: number[]) => point.join(',')));
+  const reset = () => {setStep(0); setSelected(null);};
+  const changeCost = (value: string, setter: (value: number) => void) => {setter(Math.max(0, Math.min(9, Number(value) || 0))); reset();};
+
+  return <div className="lab-grid">
+    <div className="lab-stack"><Panel title="Set the edit problem"><div className="control-row"><div className="control-field"><label htmlFor="edit-source">Source</label><input className="text-input" id="edit-source" value={source} maxLength={14} onChange={event => {setSource(event.target.value); reset();}} /></div><div className="control-field"><label htmlFor="edit-target">Target</label><input className="text-input" id="edit-target" value={target} maxLength={14} onChange={event => {setTarget(event.target.value); reset();}} /></div></div><div className="control-row" style={{marginTop: 13}}><div className="control-field"><label htmlFor="insert-cost">Insert cost</label><input className="number-input" id="insert-cost" type="number" min="0" max="9" value={insert} onChange={event => changeCost(event.target.value, setInsert)} /></div><div className="control-field"><label htmlFor="delete-cost">Delete cost</label><input className="number-input" id="delete-cost" type="number" min="0" max="9" value={deletion} onChange={event => changeCost(event.target.value, setDeletion)} /></div><div className="control-field"><label htmlFor="substitute-cost">Substitute cost</label><input className="number-input" id="substitute-cost" type="number" min="0" max="9" value={substitute} onChange={event => changeCost(event.target.value, setSubstitute)} /></div></div><div className="button-line" style={{marginTop: 16}}><button className="button button-primary" disabled={step >= total} onClick={() => setStep(Math.min(total, step + 1))}>Fill next cell</button><button className="button" onClick={() => setStep(total)}>Fill all</button><button className="button button-quiet" onClick={reset}>Reset</button><span className="subtle">{Math.min(step, total)} / {total} cells</span></div></Panel>
+      <Panel title="Minimum-edit grid" detail="Select a cell to inspect"><div className="matrix-scroll"><table className="matrix" aria-label="Minimum edit distance grid"><thead><tr><th></th>{['∅', ...result.b].map((character: string, index: number) => <th key={index}>{character}</th>)}</tr></thead><tbody>{result.grid.map((values: number[], i: number) => <tr key={i}><th>{i ? result.a[i - 1] : '∅'}</th>{values.map((value: number, j: number) => <td key={j} tabIndex={0} role="button" aria-label={`D ${i}, ${j}: ${value}`} className={`selectable ${i * columns + j >= step ? 'muted' : ''} ${step >= total && path.has(`${i},${j}`) ? 'path' : ''} ${i === row && j === column ? 'selected' : ''}`} onClick={() => setSelected([i, j])} onKeyDown={event => {if (event.key === 'Enter' || event.key === ' ') {event.preventDefault(); setSelected([i, j]);}}}>{i * columns + j < step ? value : '·'}</td>)}</tr>)}</tbody></table></div><p className="micro-copy">The highlighted route is one optimal alignment. Equal-cost ties can create others.</p></Panel>
+      <Panel title="Optimal edit transcript">{step >= total ? <div className="token-list">{result.operations.map((operation: {op: string; from: string; to: string}, index: number) => <span className={`token-chip ${operation.op === 'match' ? '' : 'alt'}`} title={operation.op} key={index}>{operation.from || '∅'} → {operation.to || '∅'}</span>)}</div> : <Empty>Fill the grid to trace the minimum-cost path.</Empty>}</Panel>
+    </div>
+    <div className="lab-stack"><Panel title="Selected calculation"><div className="stat-row"><Stat value={result.distance} label="Minimum cost" tone="mint" /><Stat value={result.a.length} label="Source length" /><Stat value={result.b.length} label="Target length" /></div><Formula>D[i,j] = min(delete, insert, match/substitute)</Formula><div className="math-lines" style={{marginTop: 13}}>{options ? options.map((option: {op: string; value: number; from: number[]}) => <div className="math-line" key={option.op}><span>{option.op} from D[{option.from.join(',')}]</span><strong>{option.value}</strong></div>) : <div className="math-line"><span>Boundary from empty string</span><strong>{result.grid[row][column]}</strong></div>}</div><p className="micro-copy">D[{row},{column}] = {result.grid[row][column]}. {row && column ? `This compares ${result.a[row - 1]} with ${result.b[column - 1]}.` : 'This is an empty-prefix boundary.'}</p></Panel><Challenge question="If substitution cost rises from 1 to 2, can the minimum distance decrease?" answer="No. Raising the cost of an available edit cannot make the cheapest path cheaper, although the chosen path may change." /><div className="callout"><strong>What it measures</strong><br />Edit distance compares surface forms. It does not tell us whether two words mean the same thing.</div></div>
+  </div>;
+}
