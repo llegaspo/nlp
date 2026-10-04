@@ -45,7 +45,7 @@ export default function App() {
         <div className="sidebar-bottom"><span className="sidebar-bottom-label">SOURCE MATERIAL</span><strong>12 course PDFs</strong><p>Every experiment uses explicit data and equations.</p></div>
       </aside>
       <main className="main-workspace" id="main-content">
-        <div className="lesson-intro"><div><div className="eyebrow">LESSON {String(active + 1).padStart(2, '0')} <span>/</span> {String(lessons.length).padStart(2, '0')}</div><h1>{lesson.name}</h1><p>{active === 3 ? 'Train a small word prediction model and watch its vectors change with each update.' : lesson.section + ' through a live experiment. Change an input to see the calculation respond.'}</p></div><div className="source-pill"><span>LESSON SOURCE</span><strong>{lesson.source}</strong></div></div>
+        <div className="lesson-intro"><div><div className="eyebrow">LESSON {String(active + 1).padStart(2, '0')} <span>/</span> {String(lessons.length).padStart(2, '0')}</div><h1>{lesson.name}</h1><p>{active === 0 ? 'Count words and types, test normalization, inspect morphemes, and train small subword models.' : active === 3 ? 'Train a small word prediction model and watch its vectors change with each update.' : lesson.section + ' through a live experiment. Change an input to see the calculation respond.'}</p></div><div className="source-pill"><span>LESSON SOURCE</span><strong>{lesson.source}</strong></div></div>
         {lessons.map((item, index) => {
           const Lesson = item.component;
           return <div key={item.id} hidden={index !== active} data-active-lab={index === active ? item.id : undefined}><Lesson /></div>;

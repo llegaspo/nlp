@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node tests/math.test.mjs"
+    "test": "node tests/math.test.mjs && node tests/tokenization.test.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",
