@@ -6,11 +6,15 @@ An interactive React and TypeScript study app based on the PDFs in `../.docs`. I
 
 ```sh
 cd nlp-visual-lab
-npm install
+npm ci
 npm run dev
 ```
 
 Open the local URL printed by Vite. `npm run build` produces a static `dist` directory; `npm test` checks the key lesson calculations. The lessons themselves run in the browser without a backend or account. An optional web font and an attribution link to the original Word2Vec paper use the network.
+
+## Publish on your own host
+
+See [DEPLOYMENT.md](DEPLOYMENT.md). This is a standard static site: your host installs with `npm ci`, builds with `npm run build`, and serves `dist/`. No GPT hosting or API is required.
 
 The high fidelity UI reference was generated before the React implementation and saved at [`design/embedding-workspace-concept.png`](design/embedding-workspace-concept.png). Its prompt and usage notes are in [`design/README.md`](design/README.md). The mockup is a design reference: the app's topics, graph points, and numbers come from the course material and live calculations.
 

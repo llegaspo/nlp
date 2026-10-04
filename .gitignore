@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.openai/
 .sites-runtime/
 .sites-checkout/
 *.tsbuildinfo
