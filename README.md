@@ -34,6 +34,8 @@ The production output is `dist/`. See [DEPLOYMENT.md](DEPLOYMENT.md) for static 
 
 The original tokenization workbenches remain available: token streams, normalization, morphemes, and BPE/WordPiece/Unigram/SentencePiece/byte-level comparisons. The embedding and neural-network labs train real tiny models. Attention computes explicit query/key/value projections, softmax weights, causal masks, and value mixtures. The BERT lab exposes selected-target loss and input corruption. The generation sandbox uses an explicitly disclosed, hand-authored score table to teach decoding.
 
+Dark mode is the default. Use the sun/moon button in the header to switch to light or dark mode; the choice is saved under `nlp-visual-lab.theme` and restored before the page paints. The toggle remains usable when browser storage is unavailable.
+
 Progress is stored under `nlp-visual-lab.progress.v2` in localStorage. A lesson is complete when both answers are correct. State inside an experiment survives tab changes within that lesson; navigating to another lesson resets its experiment. Disabled or malformed storage does not block the course.
 
 ## Project structure
@@ -42,7 +44,7 @@ Progress is stored under `nlp-visual-lab.progress.v2` in localStorage. A lesson 
 - `src/components/`: the course home, guided lesson view, reference pages, and shared UI.
 - `src/labs/`: interactive lessons and the tokenization subtopics.
 - `src/lib/math.js`, `tokenization.js`, `transformer.js`: pure calculation engines with TypeScript declarations.
-- `src/styles.css`: the new course interface and responsive rules; `src/labs.css`: retained experiment styles adapted to the light palette.
+- `src/styles.css`: the course interface and responsive rules; `src/labs.css`: shared experiment styles; `src/theme.css`: semantic colors for both themes.
 - `SOURCE_AUDIT.md`: source mapping, teaching simplifications, corrected slide ambiguities, and validation details.
 
 Navigation uses URL fragments, preserving existing links such as `#tokens` and `#embeddings`. New lessons include `#intro`, `#attention`, `#masked`, `#llms`, and `#responsible`. `#home`, `#glossary`, and `#sources` open the supporting pages. Search is available from the header or Ctrl/Cmd+K. Lesson tabs support arrow keys, Home, and End; animation honors reduced-motion settings.

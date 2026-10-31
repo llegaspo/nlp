@@ -1,0 +1,77 @@
+/* Semantic colors shared by the course interface and every experiment.
+   Dark is the default, including when no preference can be stored. */
+:root {
+  color-scheme: dark;
+  --canvas: #141c18;
+  --surface: #1c2721;
+  --surface-soft: #222f27;
+  --surface-raised: #2b3a2e;
+  --ink: #e8eee6;
+  --muted: #bbc8ba;
+  --accent: #a3cea3;
+  --accent-dark: #b8ddaf;
+  --on-accent: #112316;
+  --accent-soft: #263d2e;
+  --accent-soft-strong: #3d5741;
+  --border: #334638;
+  --border-strong: #5c7658;
+  --border-accent: #7b9d6d;
+  --warm-text: #e0bf94;
+  --warm-surface: #352d23;
+  --warm-strong: #4b3928;
+  --warm-border: #776246;
+  --violet-text: #cab5e1;
+  --violet-surface: #2e293c;
+  --violet-strong: #403450;
+  --violet-border: #766487;
+  --blue-text: #a8c7e0;
+  --blue-surface: #23333e;
+  --blue-strong: #304653;
+  --blue-border: #536f85;
+  --chart-green: #99c48d;
+  --chart-warm: #d3ae74;
+  --chart-violet: #b89bd4;
+  --chart-blue: #8dbada;
+  --heatmap-rgb: 58, 115, 79;
+  --shadow-solid: #0e1511;
+  --shadow: #00000040;
+  --overlay: #060c09a6;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --canvas: #f7f8f2;
+  --surface: #fffefa;
+  --surface-soft: #f1f5eb;
+  --surface-raised: #ecf2e3;
+  --ink: #273d33;
+  --muted: #586451;
+  --accent: #28745a;
+  --accent-dark: #1f5e48;
+  --on-accent: #ffffff;
+  --accent-soft: #e7eee4;
+  --accent-soft-strong: #d6e6ca;
+  --border: #dce2d7;
+  --border-strong: #b3c8a2;
+  --border-accent: #9ab781;
+  --warm-text: #805a36;
+  --warm-surface: #fbf4e6;
+  --warm-strong: #f3e5ca;
+  --warm-border: #d9c5a5;
+  --violet-text: #756086;
+  --violet-surface: #f1eaf6;
+  --violet-strong: #e3d7ec;
+  --violet-border: #c6b3d7;
+  --blue-text: #456c8c;
+  --blue-surface: #eaf0f5;
+  --blue-strong: #d5e3ed;
+  --blue-border: #a4bfd5;
+  --chart-green: #7f9f68;
+  --chart-warm: #bc945a;
+  --chart-violet: #9279ad;
+  --chart-blue: #6a91b8;
+  --heatmap-rgb: 104, 162, 112;
+  --shadow-solid: #eaeddf;
+  --shadow: #23381d26;
+  --overlay: #25362260;
+}

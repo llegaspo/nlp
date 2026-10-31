@@ -9,6 +9,8 @@ const root=fileURLToPath(new URL('..',import.meta.url)).replace(/\/$/,'');
 const {lessons}=await import(root+'/src/data/course.ts');
 const files=await readdir(root+'/dist/assets');
 const js=await readFile(root+'/dist/assets/'+files.find(f=>/^index-.*\.js$/.test(f)),'utf8');
+const html=await readFile(root+'/dist/index.html','utf8');
+const themeInit=html.match(/<script id="theme-init">([\s\S]*?)<\/script>/)[1];
 const errors=[];
 const vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e.message));vc.on('error',(...args)=>errors.push(args.join(' ')));
 const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url:'https://nlp.test/',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:vc});
@@ -25,6 +27,13 @@ const click=async e=>{assert.ok(e,'click target exists');e.click();await tick();
 const route=async id=>{w.location.hash=id;await tick();await tick();};
 const setValue=async (el,value)=>{const proto=el instanceof w.HTMLSelectElement?w.HTMLSelectElement.prototype:w.HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(el,String(value));el.dispatchEvent(new w.Event('input',{bubbles:true}));el.dispatchEvent(new w.Event('change',{bubbles:true}));await tick();};
 await tick();await tick();
+assert.equal(w.document.documentElement.dataset.theme,'dark');
+assert.equal($('.theme-toggle').getAttribute('aria-label'),'Switch to light mode');
+await click($('.theme-toggle'));
+assert.equal(w.document.documentElement.dataset.theme,'light');
+assert.equal(w.localStorage.getItem('nlp-visual-lab.theme'),'light');
+await click($('.theme-toggle'));
+assert.equal(w.document.documentElement.dataset.theme,'dark');
 assert.match($('h1').textContent,/Make sense/);
 assert.equal($$('.chapter-lessons>a').length,lessons.length);
 const before=$('.preview-predictions').textContent;
@@ -101,3 +110,30 @@ for (const stored of [persisted, '{invalid json', JSON.stringify({answers:{intro
 }
 assert.deepEqual(errors,[]);
 console.log('Reload persistence and corrupt-storage recovery passed.');
+
+// Check startup before React runs, reload preferences, and unavailable storage.
+for (const storedTheme of [null, 'light', 'dark', 'invalid', 'storage-blocked']) {
+ const fresh=new JSDOM('<head><meta name="theme-color" content="#141c18"></head><body><div id="root"></div></body>',{url:'https://nlp.test/',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:vc});
+ const win=fresh.window;
+ if(storedTheme==='storage-blocked')Object.defineProperty(win,'localStorage',{get(){throw new Error('Storage is disabled');}});
+ else if(storedTheme!==null)win.localStorage.setItem('nlp-visual-lab.theme',storedTheme);
+ const expected=storedTheme==='light'?'light':'dark';
+ win.eval(themeInit);
+ assert.equal(win.document.documentElement.dataset.theme,expected,'Saved theme applies before React mounts');
+ win.eval(js);await tick();await tick();
+ assert.equal(win.document.documentElement.dataset.theme,expected);
+ const toggle=win.document.querySelector('.theme-toggle');
+ assert.equal(toggle.getAttribute('aria-label'),`Switch to ${expected==='dark'?'light':'dark'} mode`);
+ toggle.click();await tick();
+ const switched=expected==='dark'?'light':'dark';
+ assert.equal(win.document.documentElement.dataset.theme,switched);
+ assert.equal(win.document.querySelector('meta[name="theme-color"]').content,switched==='dark'?'#141c18':'#f7f8f2');
+ if(storedTheme!=='storage-blocked') {
+  assert.equal(win.localStorage.getItem('nlp-visual-lab.theme'),switched);
+  win.eval(themeInit);
+  assert.equal(win.document.documentElement.dataset.theme,switched,'Startup restores the selection written by the toggle');
+ }
+ win.close();
+}
+assert.deepEqual(errors,[]);
+console.log('Dark default, theme toggle, pre-paint persistence, invalid preferences, and blocked storage passed.');

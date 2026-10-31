@@ -1,9 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f7f8f2" />
+    <meta name="theme-color" content="#141c18" />
+    <script id="theme-init">
+      (() => {
+        let theme = 'dark';
+        try {
+          if (localStorage.getItem('nlp-visual-lab.theme') === 'light') theme = 'light';
+        } catch {}
+        document.documentElement.dataset.theme = theme;
+        document.querySelector('meta[name="theme-color"]').content =
+          theme === 'dark' ? '#141c18' : '#f7f8f2';
+      })();
+    </script>
     <meta name="description" content="Make sense of language through 13 guided NLP lessons, interactive experiments, and practice. From tokens and embeddings to transformers, BERT, and language models." />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>Learn by doing · NLP Visual Lab</title>
