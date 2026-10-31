@@ -4,3 +4,6 @@ dist/
 .sites-runtime/
 .sites-checkout/
 *.tsbuildinfo
+
+# pnpm is the project package manager.
+package-lock.json

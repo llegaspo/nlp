@@ -1,0 +1,11 @@
+export const ATTENTION_TOKENS: string[];
+export const ATTENTION_INPUTS: number[][];
+export const ATTENTION_HEADS: {Q: number[][]; K: number[][]; V: number[][]}[];
+export function project(rows: number[][], weights: number[][]): number[][];
+export function scaledAttention(Q: number[][], K: number[][], V: number[][], causal?: boolean): {scores: number[][]; weights: number[][]; output: number[][]};
+export function attentionExample(head?: number, causal?: boolean): ReturnType<typeof scaledAttention> & {Q: number[][]; K: number[][]; V: number[][]};
+export function positionalEncoding(position: number, dimensions?: number): number[];
+export function decodingDistribution(logits: number[], temperature?: number, topK?: number): number[];
+export function sampleIndex(probabilities: number[], draw?: number): number;
+export const GENERATION_VOCAB: string[];
+export const GENERATION_LOGITS: Record<string, number[]>;

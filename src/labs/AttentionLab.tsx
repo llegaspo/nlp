@@ -1,0 +1,59 @@
+import {useState} from 'react';
+import {Panel, Segmented, Formula, ProbabilityBars, format} from '../components/LabUI';
+import {ATTENTION_TOKENS as tokens, ATTENTION_INPUTS, ATTENTION_HEADS, attentionExample, positionalEncoding} from '../lib/transformer.js';
+
+function PositionExplorer() {
+  const [position,setPosition] = useState(3);
+  const [dimension,setDimension] = useState(0);
+  const encoding = positionalEncoding(position);
+  return <div className="lab-grid"><Panel title="Give every position a signature"><p className="micro-copy">The original transformer adds sine and cosine signals at different frequencies to token embeddings. Here, d = 8. This is one positional scheme, not a requirement for all transformers.</p><div className="control-field"><label htmlFor="position-slider">Token position: {position}</label><input id="position-slider" type="range" min="0" max="31" value={position} onChange={e=>setPosition(Number(e.target.value))}/></div>
+    <svg viewBox="0 0 600 235" className="position-chart" role="img" aria-label={`Sinusoidal encoding dimension ${dimension} over 32 positions. Selected position ${position}, value ${format(encoding[dimension])}.`}>
+      {[40,110,180].map(y=><line key={y} x1="35" x2="575" y1={y} y2={y} stroke="var(--border)"/>)}
+      {[0,1,2,3].map(d=><polyline key={d} fill="none" stroke={['#247a62','#bd653e','#8270af','#597cba'][d]} opacity={dimension===d?1:0.2} strokeWidth={dimension===d?3:1.5} points={Array.from({length:128},(_,i)=>`${35+i/127*540},${110-positionalEncoding(i/127*31)[d]*70}`).join(' ')}/>)}
+      <line x1={35+position/31*540} x2={35+position/31*540} y1="20" y2="190" stroke="var(--ink)" strokeDasharray="4 4"/>
+      <circle cx={35+position/31*540} cy={110-encoding[dimension]*70} r="6" fill="var(--accent)"/>
+      <text x="12" y="44">1</text><text x="12" y="114">0</text><text x="6" y="184">−1</text><text x="35" y="215">position 0</text><text x="520" y="215">31</text>
+    </svg>
+    <Segmented label="Encoding dimension" value={dimension} onChange={setDimension} options={[[0,'Dimension 0'],[1,'Dimension 1'],[2,'Dimension 2'],[3,'Dimension 3']]}/>
+  </Panel><div className="lab-stack"><Panel title={`The vector at position ${position}`}><div className="position-values">{encoding.map((value,i)=><div key={i}><span>d{i}</span><strong>{format(value,3)}</strong></div>)}</div><Formula>PE(pos, 2i) = sin(pos / 10000^(2i/d))<br/>PE(pos, 2i+1) = cos(pos / 10000^(2i/d))</Formula><p className="micro-copy">For d = 8, dimensions 0 and 1 use angle pos; dimensions 2 and 3 use pos/10. Each pair moves at a different frequency.</p></Panel><div className="callout"><strong>Why add position?</strong><br/>Without positional information or an order-sensitive mask, self-attention alone cannot distinguish sequence order in its inputs. “Cat chases dog” and “dog chases cat” need different representations.</div></div></div>;
+}
+
+const blockInfo: Record<string,string> = {
+  'Token + position': 'Look up a learned token embedding and add a position signal. This creates one vector for each input position.',
+  'Self-attention': 'Each query may attend to every input position. Separate heads use separate projection matrices; concatenate their outputs and apply an output projection.',
+  'Causal self-attention': 'Each position can attend to itself and earlier positions, but not later ones. During training, the shifted target sequence permits parallel prediction without future-token leakage.',
+  'Cross-attention': 'Queries come from decoder states. Keys and values come from encoder output. This lets a generated sequence use information from a separate input sequence.',
+  'Add & normalize': 'In the original 2017 design: LayerNorm(x + sublayer(x)). The residual addition preserves a direct path for information and gradients. Other transformers may normalize before the sublayer.',
+  'Feed-forward': 'The same small multilayer network transforms each position separately, adding a nonlinear transformation after attention mixes information across positions.',
+  'Vocabulary head': 'A linear projection turns each hidden vector into one score per vocabulary token. Softmax produces the next-token distribution.',
+  'Task head': 'A task-specific output layer can classify a sequence or label its tokens. BERT-style encoders are also pretrained by predicting masked tokens.',
+};
+function ArchitectureExplorer() {
+  const [kind,setKind]=useState<'encoder'|'decoder'|'both'>('decoder');
+  const [selected,setSelected]=useState('Causal self-attention');
+  const blocks=kind==='encoder'?['Token + position','Self-attention','Add & normalize','Feed-forward','Add & normalize','Task head']:['Token + position','Causal self-attention','Add & normalize',...(kind==='both'?['Cross-attention','Add & normalize']:[]),'Feed-forward','Add & normalize','Vocabulary head'];
+  return <div><Segmented label="Transformer architecture" options={[["encoder",'Encoder'],["decoder",'Decoder'],["both",'Encoder–decoder']]} value={kind} onChange={value=>{setKind(value);setSelected('Token + position');}}/><div className="architecture-layout"><div className="architecture-flow">{kind==='both'&&<div className="encoder-source"><strong>Source text → encoder</strong><span>All source positions → keys & values for cross-attention ↓</span></div>}{blocks.map((block,i)=><button key={`${block}${i}`} aria-pressed={selected===block} className={`architecture-block ${selected===block?'selected':''}`} onClick={()=>setSelected(block)}><span>{String(i+1).padStart(2,'0')}</span>{block}<span>↓</span></button>)}</div><div className="architecture-explainer"><span className="eyebrow">SELECT A BLOCK</span><h3>{selected}</h3><p>{blockInfo[selected]}</p><div className="callout"><strong>{kind==='encoder'?'Read the full input':kind==='decoder'?'Continue the sequence':'Read one sequence, generate another'}</strong><br/>{kind==='encoder'?'Bidirectional representations suit classification and token labeling.':kind==='decoder'?'Autoregressive generation repeats a next-token prediction.': 'The original transformer uses an encoder and a decoder for translation.'}</div><p className="micro-copy">The attention and feed-forward blocks repeat across layers. This diagram shows one block’s order, with residual normalization shown explicitly. It is a schematic, not a running full transformer.</p></div></div></div>;
+}
+
+export default function AttentionLab() {
+  const [view,setView]=useState<'attention'|'positions'|'architecture'>('attention');
+  const [query,setQuery]=useState(1);
+  const [key,setKey]=useState(2);
+  const [causal,setCausal]=useState(false);
+  const [head,setHead]=useState(0);
+  const result=attentionExample(head,causal);
+  const selected=result.weights[query];
+  return <div className="lab-stack"><div className="lesson1-section-nav" aria-label="Transformer experiments">{([['attention','01 Attention'],['positions','02 Position'],['architecture','03 Architecture']] as const).map(([id,label])=><button key={id} className={view===id?'active':''} aria-pressed={view===id} onClick={()=>setView(id)}>{label}</button>)}</div>
+  {view==='positions'?<PositionExplorer/>:view==='architecture'?<Panel title="Inside a transformer"><ArchitectureExplorer/></Panel>:<>
+    <div className="attention-controls"><div><span className="field-label">Projection</span><Segmented label="Attention head" value={head} onChange={setHead} options={[[0,'Head 1'],[1,'Head 2']]}/></div><label className="toggle-field"><input type="checkbox" checked={causal} onChange={e=>setCausal(e.target.checked)}/><span><strong>Causal mask</strong><small>Hide future tokens</small></span></label><span className="toy-label">2D teaching vectors · computed live</span></div>
+    <div className="lab-grid"><div className="lab-stack"><Panel title="Where does this token look?" detail="SELECT A QUERY TOKEN"><div className="attention-tokens">{tokens.map((token,i)=><button key={i} className={i===query?'selected':''} aria-pressed={i===query} onClick={()=>setQuery(i)}><small>{i}</small>{token}</button>)}</div>
+      <svg viewBox="0 0 600 180" className="attention-links" role="img" aria-label={`Attention from ${tokens[query]} at position ${query}; weights are also listed in the adjacent table.`}>
+        {selected.map((weight,j)=><path key={j} d={`M${50+query*100} 10 C${50+query*100} 90 ${50+j*100} 90 ${50+j*100} 145`} fill="none" stroke="var(--accent)" strokeWidth={1+weight*13} opacity={weight===0?0:0.2+weight*0.8}/>)}
+        {tokens.map((token,j)=><g key={j}><circle cx={50+j*100} cy="145" r={5+selected[j]*13} fill={selected[j]===0?'var(--border)':'var(--accent)'}/><text x={50+j*100} y="175" textAnchor="middle" fill="var(--ink)" fontSize="14">{token}</text></g>)}
+      </svg><p className="micro-copy">Thicker lines mean larger computed weights. These hand-set vectors demonstrate arithmetic, not learned syntax or a model’s explanation.</p>
+    </Panel><Panel title="Every query, every key" detail="SELECT A CELL"><div className="matrix-scroll"><table className="attention-matrix"><caption>Rows: queries · columns: keys · each row sums to 1</caption><thead><tr><th scope="col">Q ↓ K →</th>{tokens.map((t,j)=><th key={j} scope="col">{t}<small>{j}</small></th>)}</tr></thead><tbody>{result.weights.map((row,i)=><tr key={i}><th scope="row">{tokens[i]} <small>{i}</small></th>{row.map((value,j)=><td key={j}><button aria-label={`Query ${tokens[i]} ${i}, key ${tokens[j]} ${j}: ${format(value,4)}${causal&&j>i?', masked':''}`} aria-pressed={query===i&&key===j} onClick={()=>{setQuery(i);setKey(j);}} style={{background:causal&&j>i?'var(--canvas)':`rgba(42,125,98,${0.08+value*0.65})`}}>{causal&&j>i?'—':format(value,2)}</button></td>)}</tr>)}</tbody></table></div></Panel></div>
+    <div className="lab-stack"><Panel title={`Query: ${tokens[query]} · position ${query}`}><ProbabilityBars items={tokens.map((t,j)=>[`${t} (${j})`,selected[j]])} selected={`${tokens[key]} (${key})`}/><div className="divider"/><Formula caption="The output is the weighted sum of the value vectors.">output = [{result.output[query].map(v=>format(v,3)).join(', ')}]</Formula></Panel><Panel title="Inspect the calculation"><div className="math-lines"><div className="math-line"><span>Q[{query}]</span><strong>[{result.Q[query].map(v=>format(v,2)).join(', ')}]</strong></div><div className="math-line"><span>K[{key}]</span><strong>[{result.K[key].map(v=>format(v,2)).join(', ')}]</strong></div><div className="math-line"><span>dot(Q, K) / √2{causal&&key>query?' + mask':''}</span><strong>{format(result.scores[query][key],4)}</strong></div><div className="math-line"><span>After row softmax</span><strong>{format(selected[key],4)}</strong></div><div className="math-line"><span>V[{key}]</span><strong>[{result.V[key].map(v=>format(v,2)).join(', ')}]</strong></div><div className="math-line"><span>weight × V[{key}]</span><strong>[{result.V[key].map(v=>format(v*selected[key],3)).join(', ')}]</strong></div></div><p className="micro-copy">Select another matrix cell to inspect a different key. Add the weighted value contributions across all keys to reproduce the output.</p></Panel></div></div>
+    <details className="source-details"><summary>See every input and projection matrix</summary><p>These values are fixed educational examples. Each head computes Q = XWq, K = XWk, V = XWv. In a trained transformer, the projection weights are learned.</p><div className="projection-grid">{Object.entries({X:ATTENTION_INPUTS,...ATTENTION_HEADS[head]}).map(([label,matrix])=><div key={label}><strong>{label==='X'?'X (input vectors)':`W${label.toLowerCase()}`}</strong><pre>{matrix.map(row=>`[ ${row.map(v=>v.toFixed(1)).join('  ')} ]`).join('\n')}</pre></div>)}</div></details>
+  </>}
+  </div>;
+}

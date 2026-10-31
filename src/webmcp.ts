@@ -9,7 +9,7 @@ type WebTool = {
 type ModelContext = {registerTool: (tool: WebTool, options?: {signal?: AbortSignal}) => void | Promise<void>};
 type WebDocument = Document & {modelContext?: ModelContext};
 
-const lessons = ['tokens', 'edit-distance', 'context-vectors', 'embeddings', 'ngrams', 'smoothing', 'perplexity', 'neural'];
+const lessons = ['intro', 'tokens', 'edit-distance', 'context-vectors', 'embeddings', 'ngrams', 'smoothing', 'perplexity', 'neural', 'attention', 'masked', 'llms', 'responsible'];
 
 export function registerWebTools() {
   const context = (document as WebDocument).modelContext;
@@ -20,7 +20,7 @@ export function registerWebTools() {
     {
       name: 'open_nlp_lesson',
       title: 'Open an NLP lesson',
-      description: 'Navigate to one of the eight interactive course lessons.',
+      description: 'Navigate to one of the thirteen interactive course lessons.',
       inputSchema: {type: 'object', properties: {lesson: {type: 'string', enum: lessons}}, required: ['lesson'], additionalProperties: false},
       annotations: {readOnlyHint: false, untrustedContentHint: false},
       async execute(input) {
@@ -44,6 +44,8 @@ export function registerWebTools() {
         location.hash = 'embeddings';
         for (let attempt = 0; attempt < 5 && !document.querySelector('[data-active-lab="embeddings"]'); attempt++) await nextFrame();
         if (!document.querySelector('[data-active-lab="embeddings"]')) throw new Error('Embedding lesson could not open');
+        document.querySelector<HTMLButtonElement>('[data-open-experiment]')?.click();
+        await nextFrame();
         return new Promise((resolve, reject) => {
           const timeout = window.setTimeout(() => reject(new Error('Embedding lesson did not respond')), 3000);
           window.dispatchEvent(new CustomEvent('nlp:train-embedding', {detail: {steps, resolve: (value: unknown) => {window.clearTimeout(timeout); resolve(value);}}}));

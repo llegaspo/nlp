@@ -7,13 +7,13 @@ The whole `nlp-visual-lab` directory is the source project. It is a React + Type
 From this directory:
 
 ```sh
-npm ci
-npm test
-npm run build
-npm run preview
+pnpm install --frozen-lockfile
+pnpm test
+pnpm build
+pnpm preview
 ```
 
-Open the preview URL printed by Vite. The production files are in `dist/`. `npm run preview` is for local inspection; use a static web host for production.
+Open the preview URL printed by Vite. The production files are in `dist/`. `pnpm preview` is for local inspection; use a static web host for production.
 
 ## Publish
 
@@ -22,13 +22,13 @@ You can either upload the **contents of `dist/`** to any static web server or co
 | Setting | Value |
 | --- | --- |
 | Project or repository root | `nlp-visual-lab/` |
-| Install command | `npm ci` |
-| Build command | `npm run build` |
+| Install command | `pnpm install --frozen-lockfile` |
+| Build command | `pnpm build` |
 | Output or publish directory | `dist` |
 | Runtime environment variables | None |
 
 The build uses relative asset URLs, so it can be served at a domain root or a subpath. The lesson navigation uses URL fragments (`#...`), so no special server rewrite rule is needed.
 
-If you make a new Git repository for it, run `git remote -v` first. This local repository currently has no remote, so you can add your own hosting repository as `origin`. `node_modules/`, `dist/`, and `.openai/` are ignored by Git. The `.docs` lesson PDFs sit outside this project and are not needed by the published site.
+Check `git remote -v` before configuring a hosting repository; preserve any remote already configured. `node_modules/`, `dist/`, and `.openai/` are ignored by Git. The `.docs` lesson PDFs sit outside this project and are not needed by the published site.
 
-The Google Fonts CSS request is optional; the interface falls back to system fonts if unavailable. The Word2Vec citation opens the original paper on arXiv.
+The Google Fonts CSS request is optional; the interface falls back to system fonts if unavailable. Primary-source citations link to the original publications. Lesson progress is local to each browser and is not synchronized across devices.

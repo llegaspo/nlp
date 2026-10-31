@@ -7,7 +7,8 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node tests/math.test.mjs && node tests/tokenization.test.mjs"
+    "test": "node tests/math.test.mjs && node tests/tokenization.test.mjs && node tests/transformer.test.mjs",
+    "test:ui": "pnpm build && node tests/ui.test.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",
@@ -19,5 +20,6 @@
     "@vitejs/plugin-react": "^6.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.2"
-  }
+  },
+  "packageManager": "pnpm@12.3.4"
 }

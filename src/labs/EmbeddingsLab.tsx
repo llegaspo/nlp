@@ -31,8 +31,10 @@ export default function EmbeddingsLab() {
 
   useEffect(() => {
     const pauseWhenLeaving = () => {if (location.hash !== '#embeddings') setPlaying(false);};
+    const pause = () => setPlaying(false);
     window.addEventListener('hashchange', pauseWhenLeaving);
-    return () => window.removeEventListener('hashchange', pauseWhenLeaving);
+    window.addEventListener('nlp:pause-animation', pause);
+    return () => {window.removeEventListener('hashchange', pauseWhenLeaving);window.removeEventListener('nlp:pause-animation', pause);};
   }, []);
 
   useEffect(() => {

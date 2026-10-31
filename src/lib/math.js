@@ -116,7 +116,7 @@ export function ngramModel(lines) {
 }
 
 export function conditional(model, history, token, order=2, method='mle', k=0.3) {
-  const h=history.slice(-(order-1));
+  const h=order===1 ? [] : history.slice(-(order-1));
   while(h.length<order-1)h.unshift('<s>');
   const key=JSON.stringify(h), count=model.maps[order].get(key)?.get(token)||0;
   const denominator=model.totals[order].get(key)||0;
@@ -151,7 +151,7 @@ export function scoreSentence(model, sentence, order=2, method='addk', k=0.3) {
     if (!value)logProbability=-Infinity;
     else if (Number.isFinite(logProbability))logProbability+=Math.log(value);
     history.push(token);if(history.length>order-1)history.shift();
-    return {token,history:current,...result};
+    return {token,history:current,...result,value};
   });
   return {steps,logProbability,perplexity:tokens.length?(Number.isFinite(logProbability)?Math.exp(-logProbability/tokens.length):Infinity):null};
 }
