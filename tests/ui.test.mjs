@@ -97,7 +97,114 @@ await route('not-a-lesson');assert.match($('h1').textContent,/isn’t here/);
 assert.deepEqual(errors,[]);
 console.log('Token subtopics, glossary, lesson search, invalid routes passed. No runtime errors.');
 const persisted=w.localStorage.getItem('nlp-visual-lab.progress.v2');
+
+const cafe=JSON.parse(await readFile(root+'/src/data/cafeExercise.json','utf8'));
+await route('exercises');
+assert.match($('h1').textContent,/A tiny café/);
+assert.match(w.document.title,/Build a café autocomplete/);
+assert.equal($('.sidebar-resources a[href="#exercises"]').getAttribute('aria-current'),'page');
+assert.equal($$('.mission-nav button').length,5);
+assert.equal($('.setup-code pre code').textContent,cafe.setup.trimEnd());
+await click(button('Jupyter',$('.exercise-setup')));
+assert.match($('.notebook-instructions').textContent,/Python 3 kernel/);
+await click(button('Google Colab',$('.exercise-setup')));
+assert.ok($('.notebook-instructions a[href="https://colab.research.google.com/"]'));
+await click(button('A little nudge?'));
+assert.equal($$('.mission-hints p').length,1);
+await click(button('One more hint'));
+assert.equal($$('.mission-hints p').length,2);
+await setValue($('#cafe-token-input'),'Tea? TEA! Cake.');
+assert.equal($$('.cafe-token-stream>span').length,3);
+assert.match($('.cafe-preview-result').textContent,/3 token instances.*2 distinct types/);
+await setValue($('#cafe-token-input'),'123!');
+assert.equal($$('.cafe-token-stream>span').length,0);
+assert.ok(button('Check my prediction').disabled);
+await click($$('.checkpoint-options button')[2]);
+await click(button('Check my prediction'));
+assert.ok($('.mission-checkpoint .answer-feedback.retry'));
+assert.equal($('.mission-progress [role="progressbar"]').getAttribute('aria-valuenow'),'0');
+
+let copied;
+Object.defineProperty(w.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{copied=text;}}});
+for(let i=0;i<cafe.steps.length;i++) {
+ await click($$('.mission-nav button')[i]);
+ const mission=cafe.steps[i];
+ assert.equal($('#cafe-mission-title').textContent,mission.title);
+ assert.equal($('.cafe-code-workspace pre code').textContent,mission.starter.trimEnd());
+ await click(button('Worked version',$('.mission-code-toolbar')));
+ assert.equal($('.cafe-code-workspace pre code').textContent,mission.solution.trimEnd());
+ assert.equal($('.cafe-code-workspace .expected-output pre').textContent,mission.output);
+ await click($('.cafe-code-workspace .code-copy'));
+ assert.equal(copied,mission.solution);
+ assert.match($('.cafe-code-workspace .copy-status').textContent,/Code copied/);
+ if(i===1) {
+  await setValue($('#cafe-history'),'would');
+  assert.equal($('.probability-row.is-selected strong').textContent,'0');
+  assert.equal($$('.probability-row').find(e=>e.querySelector('span').textContent==='like').querySelector('strong').textContent,'5');
+ }
+ if(i===3) {
+  assert.equal($('.cafe-feature-number strong').textContent,'0.1');
+  await setValue($('#cafe-smoothing-k'),0);
+  assert.equal($('.cafe-feature-number strong').textContent,'0');
+ }
+ if(i===4) {
+  assert.equal($$('.cafe-score .stat strong')[1].textContent,'5.8');
+  assert.equal($$('.cafe-prediction-trace>div').length,5);
+  await setValue($('#cafe-eval-k'),0);
+  assert.equal($$('.cafe-score .stat strong')[1].textContent,'∞');
+  await setValue($('#cafe-test-input'),'i would like cake');
+  assert.notEqual($$('.cafe-score .stat strong')[1].textContent,'∞');
+  await setValue($('#cafe-eval-k'),1);
+  await setValue($('#cafe-test-input'),'we would like espresso');
+  assert.equal($$('.cafe-score .stat strong')[1].textContent,'∞');
+  assert.match($('.cafe-preview .callout').textContent,/espresso/);
+ }
+ await click($$('.checkpoint-options button')[mission.correct]);
+ await click(button('Check my prediction'));
+ assert.ok($('.mission-checkpoint .answer-feedback.correct'));
+ assert.equal($('.mission-progress [role="progressbar"]').getAttribute('aria-valuenow'),String(i+1));
+}
+assert.ok($('.cafe-finished'));
+await setValue($('#cafe-eval-k'),0);
+await setValue($('#cafe-test-input'),'espresso tea');
+assert.match($('.cafe-prediction-trace').textContent,/undefinedhistory has no counts/);
+await setValue($('#cafe-test-input'),'we like tea');
+assert.match($('.cafe-preview .callout').textContent,/appears in training/);
+assert.equal(w.localStorage.getItem('nlp-visual-lab.progress.v2'),persisted,'Exercise progress does not change lesson progress');
+Object.defineProperty(w.navigator,'clipboard',{configurable:true,value:undefined});
+await click($('.cafe-code-workspace .code-copy'));
+assert.match($('.cafe-code-workspace .copy-status').textContent,/Code selected/);
+assert.equal(w.getSelection().toString(),cafe.steps[4].solution.trimEnd());
+const cafeProgress=w.localStorage.getItem('nlp-visual-lab.cafe.v1');
+await route('home');
+assert.ok($('.home-exercise a[href="#exercises"]'));
+await route('exercises');
+assert.equal($('#cafe-mission-title').textContent,cafe.steps[4].title);
+assert.ok($('.cafe-finished'));
+await click($$('.mission-nav button')[0]);
+await click(button('Next mission'));
+assert.equal($('#cafe-mission-title').textContent,cafe.steps[1].title);
+assert.equal(w.document.activeElement.id,'cafe-mission-title');
+assert.deepEqual(errors,[]);
+console.log('Exercise navigation, code copying and fallback, hints, live previews, checkpoints, and independent progress passed.');
 w.close();
+
+for(const stored of [cafeProgress,'{invalid',JSON.stringify({stage:999,completed:['tokens','tokens','invented']}),'storage-blocked']) {
+ const fresh=new JSDOM('<div id="root"></div>',{url:'https://nlp.test/#exercises',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:vc});
+ const win=fresh.window;
+ if(stored==='storage-blocked')Object.defineProperty(win,'localStorage',{get(){throw new Error('Storage is disabled');}});
+ else win.localStorage.setItem('nlp-visual-lab.cafe.v1',stored);
+ win.eval(js);await tick();await tick();
+ const doc=win.document;
+ assert.match(doc.querySelector('h1').textContent,/A tiny café/);
+ const expected=stored===cafeProgress?5:stored.includes('invented')?1:0;
+ assert.equal(doc.querySelector('.mission-progress [role="progressbar"]').getAttribute('aria-valuenow'),String(expected));
+ assert.equal(doc.querySelector('#cafe-mission-title').textContent,cafe.steps[stored===cafeProgress?4:0].title);
+ if(stored==='storage-blocked')assert.match(doc.querySelector('.mission-progress').textContent,/Progress lasts this visit/);
+ win.close();
+}
+assert.deepEqual(errors,[]);
+console.log('Exercise reload, malformed progress, deduplication, and unavailable storage passed.');
 for (const stored of [persisted, '{invalid json', JSON.stringify({answers:{intro:[null,99]},lastLesson:'unknown'})]) {
  const fresh=new JSDOM('<div id="root"></div>',{url:'https://nlp.test/',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:vc});
  fresh.window.structuredClone=structuredClone;

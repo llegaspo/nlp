@@ -1,0 +1,177 @@
+{
+  "training": [
+    "i would like tea",
+    "i would like tea",
+    "i would like coffee",
+    "you would like coffee",
+    "you would like cake",
+    "we like tea"
+  ],
+  "test": "we would like cake",
+  "setup": "import math\nimport re\nfrom collections import Counter, defaultdict\n\nTRAIN_TEXT = [\n    \"i would like tea\",\n    \"i would like tea\",\n    \"i would like coffee\",\n    \"you would like coffee\",\n    \"you would like cake\",\n    \"we like tea\",\n]\nTEST_TEXT = \"we would like cake\"  # Never add this to training.\nprint(f\"{len(TRAIN_TEXT)} training orders. Your cafe is open!\")\n",
+  "setupOutput": "6 training orders. Your cafe is open!",
+  "steps": [
+    {
+      "id": "tokens",
+      "title": "Read the orders",
+      "subtitle": "Turn a messy menu into a clean token stream.",
+      "minutes": 5,
+      "concept": "Tokenization",
+      "icon": "book",
+      "lesson": "tokens",
+      "story": "Your cafe has six past orders. Before the autocomplete can learn anything, it needs consistent words. Tea, TEA, and tea should count as the same type in this toy model.",
+      "instructions": [
+        "Write tokenize(text): lowercase the input and extract runs of a–z letters.",
+        "Tokenize each training order separately. Count all token instances and the distinct types.",
+        "Run the assertions. Then try your own text in the preview."
+      ],
+      "predict": "After lowercasing “Tea, tea & COFFEE!”, how many distinct token types remain?",
+      "options": [
+        "2 types",
+        "3 types",
+        "4 types"
+      ],
+      "correct": 0,
+      "feedback": "There are three occurrences, but only two distinct strings: tea and coffee. Commas and & are excluded by our chosen rule.",
+      "hints": [
+        "Python strings have a .lower() method. re.findall returns all matches of a regular expression.",
+        "The pattern r\"[a-z]+\" matches one or more English letters. A set keeps distinct values."
+      ],
+      "starter": "def tokenize(text):\n    # TODO: return lowercase runs of a-z letters.\n    raise NotImplementedError(\"Replace this line with your tokenizer\")\n\norders = [tokenize(line) for line in TRAIN_TEXT]\nall_tokens = [token for order in orders for token in order]\nprint(tokenize(\"Tea, tea & COFFEE!\"))\nprint(f\"{len(all_tokens)} token instances / {len(set(all_tokens))} types\")\nassert tokenize(\"Tea, tea & COFFEE!\") == [\"tea\", \"tea\", \"coffee\"]\nassert tokenize(\"\") == []\n",
+      "solution": "def tokenize(text):\n    return re.findall(r\"[a-z]+\", text.lower())\n\norders = [tokenize(line) for line in TRAIN_TEXT]\nall_tokens = [token for order in orders for token in order]\nprint(tokenize(\"Tea, tea & COFFEE!\"))\nprint(f\"{len(all_tokens)} token instances / {len(set(all_tokens))} types\")\nassert tokenize(\"Tea, tea & COFFEE!\") == [\"tea\", \"tea\", \"coffee\"]\nassert tokenize(\"\") == []\n",
+      "takeaway": "The count depends on the rule. This intentionally simple tokenizer drops punctuation and splits contractions; it is not a general multilingual tokenizer.",
+      "remix": "Change the example to “Tea? TEA! Cake.” Predict the number of instances and types before running it.",
+      "output": "['tea', 'tea', 'coffee']\n23 token instances / 8 types"
+    },
+    {
+      "id": "counts",
+      "title": "Spot the patterns",
+      "subtitle": "Collect the evidence, one neighboring pair at a time.",
+      "minutes": 6,
+      "concept": "Bigram counts",
+      "icon": "grid",
+      "lesson": "ngrams",
+      "story": "The cafe does not need to memorize entire orders. Start by counting which token follows which. Add start and end markers so it can also learn how to begin and stop.",
+      "instructions": [
+        "For each tokenized order, add <s> at the start and </s> at the end.",
+        "Use zip(sequence, sequence[1:]) to visit neighboring pairs. Increase the matching Counter entry.",
+        "Build the output vocabulary from the observed words plus </s>. The start marker is never an output."
+      ],
+      "predict": "What token follows “would” in every training example that contains it?",
+      "options": [
+        "tea",
+        "like",
+        "you"
+      ],
+      "correct": 1,
+      "feedback": "All five occurrences of would are followed by like. A bigram model records that local pattern, regardless of who placed the order.",
+      "hints": [
+        "defaultdict(Counter) gives each history its own continuation counts.",
+        "Inside the pair loop, add 1 to counts[history][word]. Keep sentence boundaries separate; never pair one order’s last word with the next order’s first."
+      ],
+      "starter": "def build_counts(tokenized_orders):\n    counts = defaultdict(Counter)\n    words = set()\n    for order in tokenized_orders:\n        words.update(order)\n        sequence = [\"<s>\"] + order + [\"</s>\"]\n        for history, word in zip(sequence, sequence[1:]):\n            # TODO: increment the count of this history -> word pair.\n            raise NotImplementedError(\"Count the adjacent pair\")\n    vocabulary = sorted(words | {\"</s>\"})\n    return counts, vocabulary\n\ncounts, vocabulary = build_counts(orders)\nprint(\"After 'like':\", dict(sorted(counts[\"like\"].items())))\nprint(\"Output vocabulary:\", len(vocabulary))\nassert counts[\"like\"][\"tea\"] == 3\nassert sum(counts[\"like\"].values()) == 6\nassert \"<s>\" not in vocabulary and \"</s>\" in vocabulary\n",
+      "solution": "def build_counts(tokenized_orders):\n    counts = defaultdict(Counter)\n    words = set()\n    for order in tokenized_orders:\n        words.update(order)\n        sequence = [\"<s>\"] + order + [\"</s>\"]\n        for history, word in zip(sequence, sequence[1:]):\n            counts[history][word] += 1\n    vocabulary = sorted(words | {\"</s>\"})\n    return counts, vocabulary\n\ncounts, vocabulary = build_counts(orders)\nprint(\"After 'like':\", dict(sorted(counts[\"like\"].items())))\nprint(\"Output vocabulary:\", len(vocabulary))\nassert counts[\"like\"][\"tea\"] == 3\nassert sum(counts[\"like\"].values()) == 6\nassert \"<s>\" not in vocabulary and \"</s>\" in vocabulary\n",
+      "takeaway": "A bigram uses one previous token. The start marker supplies history; the end marker is a token the model can predict.",
+      "remix": "Count continuations after <s> by hand. You should account for exactly six sentence starts.",
+      "output": "After 'like': {'cake': 1, 'coffee': 2, 'tea': 3}\nOutput vocabulary: 9"
+    },
+    {
+      "id": "predict",
+      "title": "Suggest the next sip",
+      "subtitle": "Turn counts into a probability distribution.",
+      "minutes": 5,
+      "concept": "Maximum likelihood",
+      "icon": "arrow",
+      "lesson": "ngrams",
+      "story": "A customer types “like”. Should the autocomplete offer tea, coffee, or cake? Divide each continuation count by the total number of times that history had a successor.",
+      "instructions": [
+        "Look up the Counter for the requested history.",
+        "Return count(word after history) / total continuations. Keep unknown output words at zero.",
+        "For an entirely unobserved history, return None: its unsmoothed estimate is undefined."
+      ],
+      "predict": "What is P(tea | like) under this count-based model?",
+      "options": [
+        "1/3",
+        "1/2",
+        "1"
+      ],
+      "correct": 1,
+      "feedback": "Tea follows like three times out of six observed continuations: 3 / 6 = 0.5. The denominator counts all continuations of this history.",
+      "hints": [
+        "The denominator is sum(counts[history].values()), not the total number of words in the whole corpus.",
+        "Counter returns 0 for a missing key. Use counts.get(history, Counter()) so looking up an unseen history does not change training data."
+      ],
+      "starter": "def next_probability(history, word):\n    if word not in vocabulary:\n        return 0.0\n    row = counts.get(history, Counter())\n    total = sum(row.values())\n    if total == 0:\n        return None\n    # TODO: return this continuation's relative frequency.\n    raise NotImplementedError(\"Divide the pair count by the history total\")\n\nfor word in (\"tea\", \"coffee\", \"cake\"):\n    p = next_probability(\"like\", word)\n    print(f\"{word:6s} {p:.3f}  \" + \"#\" * round(24 * p))\nassert math.isclose(next_probability(\"like\", \"tea\"), 0.5)\nassert math.isclose(sum(next_probability(\"like\", w) for w in vocabulary), 1.0)\nassert next_probability(\"unseen-history\", \"tea\") is None\n",
+      "solution": "def next_probability(history, word):\n    if word not in vocabulary:\n        return 0.0\n    row = counts.get(history, Counter())\n    total = sum(row.values())\n    if total == 0:\n        return None\n    return row[word] / total\n\nfor word in (\"tea\", \"coffee\", \"cake\"):\n    p = next_probability(\"like\", word)\n    print(f\"{word:6s} {p:.3f}  \" + \"#\" * round(24 * p))\nassert math.isclose(next_probability(\"like\", \"tea\"), 0.5)\nassert math.isclose(sum(next_probability(\"like\", w) for w in vocabulary), 1.0)\nassert next_probability(\"unseen-history\", \"tea\") is None\n",
+      "takeaway": "The bars sum to one. They describe corpus frequencies, not a universal fact about what customers prefer.",
+      "remix": "Change the history to would. Which bar takes all the probability mass?",
+      "output": "tea    0.500  ############\ncoffee 0.333  ########\ncake   0.167  ####"
+    },
+    {
+      "id": "smooth",
+      "title": "Rescue an unseen order",
+      "subtitle": "The cafe has never heard “we would”. Yet.",
+      "minutes": 7,
+      "concept": "Add-k smoothing",
+      "icon": "spark",
+      "lesson": "smoothing",
+      "story": "The new order is “we would like cake”. Every word is familiar, but we was followed only by like in training. The unseen we → would pair gets zero probability. Give every vocabulary item a small starting count.",
+      "instructions": [
+        "Replace the previous next_probability function with this version. k = 0 keeps MLE; k > 0 adds a pseudocount to every possible output.",
+        "Use (pair count + k) / (history total + k × vocabulary size).",
+        "Keep espresso at zero: smoothing cannot create an output token outside this fixed vocabulary."
+      ],
+      "predict": "With k = 1, what is P(would | we)? Remember: 1 observed continuation and 9 possible outputs.",
+      "options": [
+        "1/10",
+        "1/9",
+        "1/2"
+      ],
+      "correct": 0,
+      "feedback": "The numerator is 0 + 1. The denominator is 1 + 1 × 9 = 10, so the probability is 0.1. Adding to only the numerator would break normalization.",
+      "hints": [
+        "The vocabulary contains eight ordinary words and the end-of-sentence token: nine outcomes.",
+        "For an unobserved history and k > 0, all counts are zero, so each known outcome gets 1 / vocabulary size."
+      ],
+      "starter": "def next_probability(history, word, k=0.0):\n    if k < 0:\n        raise ValueError(\"k must be nonnegative\")\n    if word not in vocabulary:\n        return 0.0\n    row = counts.get(history, Counter())\n    # TODO: replace both None values with the smoothed counts.\n    numerator = None\n    denominator = None\n    if denominator == 0:\n        return None\n    return numerator / denominator\n\nfor k in (0.0, 1.0):\n    print(f\"k={k:.1f}: P(would | we) = {next_probability('we', 'would', k):.3f}\")\nassert math.isclose(next_probability(\"we\", \"would\", 1.0), 0.1)\nassert math.isclose(sum(next_probability(\"we\", w, 1.0) for w in vocabulary), 1.0)\nassert next_probability(\"we\", \"espresso\", 1.0) == 0.0\n",
+      "solution": "def next_probability(history, word, k=0.0):\n    if k < 0:\n        raise ValueError(\"k must be nonnegative\")\n    if word not in vocabulary:\n        return 0.0\n    row = counts.get(history, Counter())\n    numerator = row[word] + k\n    denominator = sum(row.values()) + k * len(vocabulary)\n    if denominator == 0:\n        return None\n    return numerator / denominator\n\nfor k in (0.0, 1.0):\n    print(f\"k={k:.1f}: P(would | we) = {next_probability('we', 'would', k):.3f}\")\nassert math.isclose(next_probability(\"we\", \"would\", 1.0), 0.1)\nassert math.isclose(sum(next_probability(\"we\", w, 1.0) for w in vocabulary), 1.0)\nassert next_probability(\"we\", \"espresso\", 1.0) == 0.0\n",
+      "takeaway": "Smoothing redistributes probability across known output tokens. It fixes unseen combinations, not the vocabulary boundary.",
+      "remix": "Try k = 0.1 and k = 1.0. Watch how much mass moves away from the observed we → like continuation.",
+      "output": "k=0.0: P(would | we) = 0.000\nk=1.0: P(would | we) = 0.100"
+    },
+    {
+      "id": "evaluate",
+      "title": "Give it a taste test",
+      "subtitle": "Score a new order without putting it into training.",
+      "minutes": 7,
+      "concept": "Held-out perplexity",
+      "icon": "check",
+      "lesson": "perplexity",
+      "story": "Your autocomplete has learned from six orders. Now evaluate “we would like cake”, a separate test order. Perplexity combines the surprise of each prediction, including the final end token.",
+      "instructions": [
+        "Build the test sequence with start and end markers. Look up each adjacent pair probability.",
+        "If any required probability is zero or undefined, return math.inf. Otherwise compute exp(−average log probability).",
+        "Compare k values on the same held-out sentence. More smoothing is not automatically better."
+      ],
+      "predict": "Which comparison tells you something meaningful about your model?",
+      "options": [
+        "Different tokenizers on different test sentences",
+        "The same held-out text and tokenization, with different k values",
+        "Training perplexity alone"
+      ],
+      "correct": 1,
+      "feedback": "Keep the evaluation text and tokenization fixed so you can interpret the difference. One tiny sentence is only a demonstration; selecting k for a real application needs validation data separate from the final test set.",
+      "hints": [
+        "The number of predictions is len(sequence) − 1. Our four-word test order has five predictions, including </s>.",
+        "Use math.log for each probability, average the negatives, then apply math.exp. Summing logs avoids multiplying many tiny probabilities."
+      ],
+      "starter": "def perplexity(sentence, k=0.0):\n    sequence = [\"<s>\"] + tokenize(sentence) + [\"</s>\"]\n    probabilities = [\n        next_probability(h, w, k)\n        for h, w in zip(sequence, sequence[1:])\n    ]\n    if any(p is None or p == 0 for p in probabilities):\n        return math.inf\n    # TODO: return exp of the average negative log probability.\n    raise NotImplementedError(\"Combine the token surprises\")\n\nprint(\"Test order:\", TEST_TEXT)\nfor k in (0.0, 0.1, 0.5, 1.0):\n    print(f\"k={k:.1f}: perplexity = {perplexity(TEST_TEXT, k):.3f}\")\nassert math.isinf(perplexity(TEST_TEXT, 0.0))\nassert math.isfinite(perplexity(TEST_TEXT, 1.0))\nassert math.isinf(perplexity(\"we would like espresso\", 1.0))\n",
+      "solution": "def perplexity(sentence, k=0.0):\n    sequence = [\"<s>\"] + tokenize(sentence) + [\"</s>\"]\n    probabilities = [\n        next_probability(h, w, k)\n        for h, w in zip(sequence, sequence[1:])\n    ]\n    if any(p is None or p == 0 for p in probabilities):\n        return math.inf\n    return math.exp(-sum(math.log(p) for p in probabilities) / len(probabilities))\n\nprint(\"Test order:\", TEST_TEXT)\nfor k in (0.0, 0.1, 0.5, 1.0):\n    print(f\"k={k:.1f}: perplexity = {perplexity(TEST_TEXT, k):.3f}\")\nassert math.isinf(perplexity(TEST_TEXT, 0.0))\nassert math.isfinite(perplexity(TEST_TEXT, 1.0))\nassert math.isinf(perplexity(\"we would like espresso\", 1.0))\n",
+      "takeaway": "A single zero can make perplexity infinite. Always report what was scored, how it was tokenized, and whether end tokens were included.",
+      "remix": "Try “i would like cake”, an unseen full order whose adjacent pairs are all known. Can its MLE perplexity be finite?",
+      "output": "Test order: we would like cake\nk=0.0: perplexity = inf\nk=0.1: perplexity = 4.314\nk=0.5: perplexity = 5.089\nk=1.0: perplexity = 5.800"
+    }
+  ],
+  "bonus": "# Bonus: add a DIFFERENT order, then retrain the counts.\n# Keep TEST_TEXT out of training.\nnew_training = TRAIN_TEXT + [\"we would like coffee\"]\ncounts, vocabulary = build_counts([tokenize(line) for line in new_training])\nprint(\"Test order:\", TEST_TEXT)\nprint(f\"New MLE perplexity: {perplexity(TEST_TEXT, 0.0):.3f}\")\nassert TEST_TEXT not in new_training\nassert math.isfinite(perplexity(TEST_TEXT, 0.0))\n\n# Restore the original model before revisiting earlier missions.\ncounts, vocabulary = build_counts(orders)\n",
+  "bonusOutput": "Test order: we would like cake\nNew MLE perplexity: 2.178"
+}
