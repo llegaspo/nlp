@@ -7,6 +7,7 @@ const require=createRequire(import.meta.url);
 const {JSDOM,VirtualConsole}=require(process.env.NLP_TEST_DOM_MODULE || 'jsdom');
 const root=fileURLToPath(new URL('..',import.meta.url)).replace(/\/$/,'');
 const {lessons}=await import(root+'/src/data/course.ts');
+const {equationStories}=await import(root+'/src/data/equations.ts');
 const files=await readdir(root+'/dist/assets');
 const js=await readFile(root+'/dist/assets/'+files.find(f=>/^index-.*\.js$/.test(f)),'utf8');
 const html=await readFile(root+'/dist/index.html','utf8');
@@ -44,6 +45,23 @@ for(const lesson of lessons){
  await route(lesson.id);
  assert.equal($('h1').textContent,lesson.title);
  assert.ok(!$('#panel-learn').hidden);
+ const guide=$('#panel-learn .equation-guide');
+ assert.equal(guide.dataset.equation,lesson.id);
+ const story=equationStories[lesson.id];
+ assert.equal(guide.querySelectorAll('.equation-flow button').length,story.steps.length);
+ assert.ok(!guide.querySelector('.equation-symbols').open,'Formal symbols start collapsed');
+ const lastStep=guide.querySelectorAll('.equation-flow button')[story.steps.length-1];
+ await click(lastStep);
+ assert.equal(lastStep.getAttribute('aria-pressed'),'true');
+ assert.match(guide.querySelector('.equation-explanation').textContent,new RegExp(story.steps.length));
+ assert.ok(guide.querySelector('.equation-explanation').textContent.includes(story.steps.at(-1).meaning));
+ const miniBefore=guide.querySelector('.equation-playground').textContent;
+ await click(guide.querySelectorAll('.equation-example-choices button')[1]);
+ assert.notEqual(guide.querySelector('.equation-playground').textContent,miniBefore);
+ await click(guide.querySelector('.equation-symbols summary'));
+ assert.ok(guide.querySelector('.equation-symbols').open);
+ assert.equal(guide.querySelector('.equation-formal').textContent,lesson.formula);
+ assert.ok(guide.querySelectorAll('.equation-symbols dd').length>0);
  await click($('#tab-experiment'));
  assert.ok(!$('#panel-experiment').hidden);
  assert.ok($('#panel-experiment').textContent.length>200);
@@ -59,6 +77,7 @@ for(const lesson of lessons){
 assert.equal(JSON.parse(w.localStorage.getItem('nlp-visual-lab.progress.v2')).answers.masked[1],2);
 await route('home');assert.match($('.journey-progress').textContent,/13 \/ 13/);
 console.log('All 13 lessons render; 26 questions, feedback, completion, and saved progress passed.');
+console.log('All lesson equation diagrams, step explanations, example changes, and optional notation passed.');
 await route('attention');await click($('#tab-experiment'));
 assert.equal($$('.attention-matrix button').length,36);
 await click($('input[type=checkbox]'));
@@ -96,6 +115,30 @@ await route('responsible');await click($('#tab-experiment'));await setValue($('#
 await route('not-a-lesson');assert.match($('h1').textContent,/isn’t here/);
 assert.deepEqual(errors,[]);
 console.log('Token subtopics, glossary, lesson search, invalid routes passed. No runtime errors.');
+await route('smoothing');await click($('#tab-experiment'));
+await click(button('Interpolate',$('#panel-experiment')));
+for(const concept of ['interpolation','backoff','good-turing']) {
+ const guide=$(`#panel-experiment [data-equation="${concept}"]`);
+ assert.ok(guide,`${concept} explanation is available`);
+ await click(guide.querySelector('.equation-example summary'));
+ const before=guide.querySelector('.equation-playground').textContent;
+ await click(guide.querySelectorAll('.equation-example-choices button')[1]);
+ assert.notEqual(guide.querySelector('.equation-playground').textContent,before);
+}
+await click(button('MLE',$('#panel-experiment .segmented')));
+assert.ok($('#panel-experiment [data-equation="ngrams"]'));
+await route('tokens');await click($('#tab-experiment'));await click(button('04 Subwords'));
+for(const [name,concept] of [['WordPiece','wordpiece'],['Unigram','unigram'],['BPE','bpe']]) {
+ await click(button(name,$('.lesson1-mode-list')));
+ assert.ok($(`#panel-experiment [data-equation="${concept}"]`));
+ const advance=button(concept==='unigram'?'Prune next':'Merge next');
+ if(!advance.disabled) {
+  await click(advance);
+  assert.match($('#panel-experiment').textContent,/This step:/);
+ }
+}
+assert.deepEqual(errors,[]);
+console.log('Dynamic smoothing, backoff, Good–Turing, and subword equation diagrams passed.');
 const persisted=w.localStorage.getItem('nlp-visual-lab.progress.v2');
 
 const cafe=JSON.parse(await readFile(root+'/src/data/cafeExercise.json','utf8'));
@@ -130,6 +173,8 @@ for(let i=0;i<cafe.steps.length;i++) {
  await click($$('.mission-nav button')[i]);
  const mission=cafe.steps[i];
  assert.equal($('#cafe-mission-title').textContent,mission.title);
+ assert.ok($('.cafe-mission>.equation-guide'));
+ assert.ok(!$('.cafe-mission>.equation-guide .equation-symbols').open);
  assert.equal($('.cafe-code-workspace pre code').textContent,mission.starter.trimEnd());
  await click(button('Worked version',$('.mission-code-toolbar')));
  assert.equal($('.cafe-code-workspace pre code').textContent,mission.solution.trimEnd());

@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node tests/math.test.mjs && node tests/tokenization.test.mjs && node tests/transformer.test.mjs",
+    "test": "node tests/math.test.mjs && node tests/tokenization.test.mjs && node tests/transformer.test.mjs && node tests/equations.test.mjs",
     "test:ui": "pnpm build && node tests/ui.test.mjs",
     "test:exercise": "python3 tests/exercise.test.py | node tests/exercise.test.mjs"
   },

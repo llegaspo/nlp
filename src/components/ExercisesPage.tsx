@@ -4,6 +4,8 @@ import {conditional, ngramModel, scoreSentence} from '../lib/math.js';
 import {format, ProbabilityBars, Segmented, Stat} from './LabUI';
 import CodeCell from './CodeCell';
 import Icon from './Icons';
+import EquationGuide from './EquationGuide';
+import type {EquationConcept} from '../data/equations';
 
 const model = ngramModel(cafe.training);
 const tokenize = (text: string) => text.toLowerCase().match(/[a-z]+/g) || [];
@@ -87,6 +89,7 @@ function MissionContent({step, number, completed, onComplete, onNext}: {step: Mi
 
   return <section className="cafe-mission" aria-labelledby="cafe-mission-title">
     <header className="cafe-mission-header"><div><span className="eyebrow">MISSION {String(number).padStart(2, '0')} / 05 · {step.concept}</span><h2 id="cafe-mission-title" tabIndex={-1}>{step.title}</h2><p>{step.subtitle}</p></div><span className="mission-time"><Icon name="clock" size={15}/>{step.minutes} min</span></header>
+    <EquationGuide compact concept={({tokens:'tokens',counts:'bigrams',predict:'ngrams',smooth:'smoothing',evaluate:'perplexity'} as Record<string,EquationConcept>)[step.id]}/>
     <div className="cafe-workspace">
       <div className="cafe-brief"><p>{step.story}</p><h3>Your mission</h3><ol>{step.instructions.map(text => <li key={text}>{text}</li>)}</ol>
         <div className="mission-hints"><button className="text-button" disabled={hints === step.hints.length} onClick={() => setHints(count => count + 1)}><Icon name="spark" size={15}/>{hints ? hints === step.hints.length ? 'Both hints revealed' : 'One more hint' : 'A little nudge?'}</button>{step.hints.slice(0, hints).map((hint, i) => <p key={hint}><strong>Hint {i + 1}.</strong> {hint}</p>)}</div>

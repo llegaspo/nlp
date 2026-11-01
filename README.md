@@ -4,6 +4,8 @@ A guided, browser-local NLP course built around the 17 PDFs in `../.docs`, with 
 
 Each lesson follows **Understand → Experiment → Check yourself**: plain-language intuition, an original worked example, an interactive calculation, and questions with explanatory feedback. Every lesson is available without prerequisites or an account.
 
+Equations begin with **Picture the idea**: a clickable diagram of the steps, a small example you can change, and an optional **See the symbols** drawer with a plain-language symbol key. All 13 lessons, lab equation panels, and Python missions use this approach. The mini examples are explicitly separate from the current lab inputs. Diagrams use the shared dark/light palette and adapt to narrow panels.
+
 ## Run locally
 
 Use pnpm 12.3.4, as pinned in `package.json`. Dependencies are locked in `pnpm-lock.yaml`.
@@ -49,6 +51,8 @@ The bonus adds a new training order while keeping the test order held out. A com
 ## Project structure
 
 - `src/data/course.ts`: lesson explanations, examples, quizzes, glossary, and primary references.
+- `src/data/equations.ts`, `src/components/EquationGuide.tsx`: equation stories, clickable diagrams, examples, and symbol keys.
+- `src/lib/equationExamples.ts`, `src/equations.css`: computed mini examples and responsive equation layouts.
 - `src/data/cafeExercise.json`: the original exercise corpus, instructions, Python code, hints, checkpoints, and verified outputs.
 - `src/components/`: the course home, guided lesson view, reference pages, and shared UI.
 - `src/labs/`: interactive lessons and the tokenization subtopics.
@@ -62,6 +66,8 @@ Navigation uses URL fragments, preserving existing links such as `#tokens` and `
 ## Validation
 
 `pnpm test` verifies tokenization, edit distance, counts, smoothing, perplexity, training steps, attention, masking, positional encoding, and decoding. It includes a regression for unigram history handling.
+
+It also verifies equation coverage for every lesson and the mini examples: probability normalization, geometric-mean perplexity, masked attention, gradient overshooting, and the distinction between segmentation-path and whole-text probability. DOM checks cover diagram steps, changed examples, collapsed notation, and formula-family changes in the labs.
 
 `pnpm test:exercise` requires Python 3 on PATH. It executes every displayed worked cell and the bonus, checks the expected outputs and held-out evaluation, and compares Python probabilities and perplexities with the JavaScript preview engine. This requires no Python packages.
 

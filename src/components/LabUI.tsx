@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
+import EquationGuide from './EquationGuide';
+import type {EquationConcept} from '../data/equations';
 
 export function Panel({title, detail, children, className = ''}: {title: string; detail?: ReactNode; children: ReactNode; className?: string}) {
   return <section className={`panel ${className}`}><div className="panel-heading"><h2>{title}</h2>{detail && <div className="panel-detail">{detail}</div>}</div><div className="panel-content">{children}</div></section>;
 }
 
-export function Formula({children, caption}: {children: ReactNode; caption?: ReactNode}) {
-  return <div className="formula-block"><div className="formula-text">{children}</div>{caption && <p>{caption}</p>}</div>;
+export function Formula({children, caption, concept}: {children?: ReactNode; caption?: ReactNode; concept: EquationConcept}) {
+  return <EquationGuide key={concept} concept={concept} compact caption={caption}>{children}</EquationGuide>;
 }
 
 export function Segmented<T extends string | number>({options, value, onChange, label}: {options: [T, string][]; value: T; onChange: (value: T) => void; label: string}) {

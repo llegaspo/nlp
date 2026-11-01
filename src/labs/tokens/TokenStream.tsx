@@ -36,7 +36,7 @@ export default function TokenStream() {
     </Panel>
     <Panel title="Count the stream" detail={<span className="panel-kicker">LIVE RESULT</span>}>
       <div className="stat-row"><Stat value={tokens.length} label="Token instances" /><Stat value={counts.size} label="Distinct types" /><Stat value={tokens.length?(counts.size/tokens.length).toFixed(2):'—'} label="Types / tokens" tone="mint" /></div>
-      <Formula caption="An instance is one entry in the stream. A type is one distinct exact string after the selected rules.">N = {tokens.length} entries · |V| = {counts.size} distinct strings</Formula>
+      <Formula concept="tokens" caption="An instance is one entry in the stream. A type is one distinct exact string after the selected rules.">N = {tokens.length} entries · |V| = {counts.size} distinct strings</Formula>
       <p className="micro-copy">{rule}{options.nfkc?' · NFKC on':''}</p>
       {prior&&<div className="lesson1-delta"><strong>Rule change</strong><span>{prior.rule}: {prior.tokens.length} instances / {countTypes(prior.tokens).size} types</span><span>Now: {tokens.length} instances / {counts.size} types</span></div>}
     </Panel>

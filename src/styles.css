@@ -2,6 +2,7 @@
 @import './theme.css';
 @import './labs.css';
 @import './exercises.css';
+@import './equations.css';
 
 :root {
   font-family: 'DM Sans', 'Noto Sans SC', system-ui, sans-serif;
